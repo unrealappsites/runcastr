@@ -343,43 +343,30 @@
 
     <div class="ob-slide" data-slide="3">
       <p class="ob-eyebrow">Step 2 of 3</p>
-      <h2>Link your <em>Bagr</em></h2>
-      <p class="desc">Enter the email you use for Bagr — we'll pull your working hours so Runcastr never suggests a run during work.</p>
+      <h2>When do you <em>work</em>?</h2>
+      <p class="desc">Runcastr will never suggest a run during these hours.</p>
       <div class="ob-field">
-        <label for="bagr-email">Bagr email</label>
-        <input type="email" id="bagr-email" placeholder="you@example.com" />
+        <label>Working days</label>
+        <div class="day-toggle" id="dayToggle">
+          <button data-day="1" class="active">Mon</button>
+          <button data-day="2" class="active">Tue</button>
+          <button data-day="3" class="active">Wed</button>
+          <button data-day="4" class="active">Thu</button>
+          <button data-day="5" class="active">Fri</button>
+          <button data-day="6">Sat</button>
+          <button data-day="0">Sun</button>
+        </div>
       </div>
-      <div class="ob-actions" style="margin-top:6px;">
-        <button class="ghost" onclick="fetchBagrHours()" style="margin-right:0;">Fetch working hours</button>
-      </div>
-      <button class="locate-link" onclick="skipBagr()">Don't have Bagr?</button>
-      <div id="bagr-status" style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--slate); text-align:left;"></div>
-
-      <div id="manual-fallback" style="display:none; margin-top:18px; text-align:left;">
+      <div class="ob-row" style="margin-top:16px;">
         <div class="ob-field">
-          <label>Working days</label>
-          <div class="day-toggle" id="dayToggle">
-            <button data-day="1" class="active">Mon</button>
-            <button data-day="2" class="active">Tue</button>
-            <button data-day="3" class="active">Wed</button>
-            <button data-day="4" class="active">Thu</button>
-            <button data-day="5" class="active">Fri</button>
-            <button data-day="6">Sat</button>
-            <button data-day="0">Sun</button>
-          </div>
+          <label for="ob-start">Start</label>
+          <input type="time" id="ob-start" value="09:00" />
         </div>
-        <div class="ob-row" style="margin-top:16px;">
-          <div class="ob-field">
-            <label for="ob-start">Start</label>
-            <input type="time" id="ob-start" value="09:00" />
-          </div>
-          <div class="ob-field">
-            <label for="ob-end">End</label>
-            <input type="time" id="ob-end" value="17:00" />
-          </div>
+        <div class="ob-field">
+          <label for="ob-end">End</label>
+          <input type="time" id="ob-end" value="17:00" />
         </div>
       </div>
-
       <div class="ob-actions">
         <button class="ghost" onclick="goToSlide(2)">Back</button>
         <button class="primary" onclick="goToSlide(4)">Continue</button>
@@ -470,11 +457,8 @@
 <script>
   const STORAGE_KEY = 'runcastr-setup';
   const OFFTIME_KEY = 'runcastr-offtime';
-  const BAGR_FUNCTION_URL = 'https://dqorsxfqokzuwmuwipov.supabase.co/functions/v1/get-working-hours';
-  const BAGR_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3JzeGZxb2t6dXdtdXdpcG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MDYwMjQsImV4cCI6MjEwMDQ4MjAyNH0.pifrvXu58tVDiVTDWWtqlEGt4L3_FoEnUlUUXBho5NE';
 
   let capturedLocation = null;
-  let capturedWorkingHours = null; // [{ day_of_week, start_time, end_time }]
   let currentSetup = null;
   let offTime = localStorage.getItem(OFFTIME_KEY) === 'true';
 
@@ -520,58 +504,6 @@
     );
   }
 
-  function skipBagr() {
-    document.getElementById('manual-fallback').style.display = 'block';
-    document.getElementById('bagr-status').textContent = 'No problem — set your working hours below.';
-    capturedWorkingHours = null;
-  }
-
-  async function fetchBagrHours() {
-    const email = document.getElementById('bagr-email').value.trim();
-    const status = document.getElementById('bagr-status');
-    const fallback = document.getElementById('manual-fallback');
-
-    if (!email) {
-      status.textContent = 'Enter the email you use for Bagr first.';
-      return;
-    }
-
-    status.textContent = 'Checking Bagr…';
-
-    try {
-      const res = await fetch(BAGR_FUNCTION_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': BAGR_ANON_KEY,
-          'Authorization': `Bearer ${BAGR_ANON_KEY}`,
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-
-      if (!data.found || !data.workingHours || data.workingHours.length === 0) {
-        status.textContent = "No working hours found for that email in Bagr — set them manually below.";
-        fallback.style.display = 'block';
-        capturedWorkingHours = null;
-        return;
-      }
-
-      capturedWorkingHours = data.workingHours;
-      fallback.style.display = 'none';
-      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      const summary = data.workingHours
-        .map(h => `${dayNames[h.day_of_week]} ${h.start_time.slice(0,5)}–${h.end_time.slice(0,5)}`)
-        .join(', ');
-      status.textContent = `Linked — ${summary}`;
-    } catch (err) {
-      status.textContent = 'Could not reach Bagr — set your working hours manually below.';
-      fallback.style.display = 'block';
-      capturedWorkingHours = null;
-    }
-  }
-
   function getManualWorkingHours() {
     const dayToggle = document.getElementById('dayToggle');
     const startTime = document.getElementById('ob-start').value;
@@ -581,7 +513,7 @@
   }
 
   function finishOnboarding() {
-    const workingHours = capturedWorkingHours ?? getManualWorkingHours();
+    const workingHours = getManualWorkingHours();
     const wakeTime = document.getElementById('ob-wake').value;
     const bedTime = document.getElementById('ob-bed').value;
 
