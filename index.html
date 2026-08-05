@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Runcastr — chase the good hour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f4f1ea;
+    --white: #ffffff;
+    --ink: #1b1f2a;
+    --terracotta: #c1502e;
+    --amber: #92e82a;
+    --slate: #7c8798;
+    --line: rgba(27,31,42,0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
+  a { color: var(--terracotta); }
+
+  .badge {
+    width: 42px; height: 42px;
+    background: var(--amber);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--ink);
+    position: relative;
+  }
+
+  /* ---------- Onboarding ---------- */
+  #onboarding {
+    position: fixed; inset: 0; background: var(--cream);
+    z-index: 50; display: flex; flex-direction: column;
+  }
+
+  .ob-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px; }
+
+  .ob-slide { display: none; max-width: 480px; width: 100%; text-align: center; }
+  .ob-slide.active { display: block; animation: rise 0.45s ease both; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .ob-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--terracotta); margin: 0 0 18px;
+  }
+
+  .ob-slide h2 {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    margin: 0 0 14px; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .ob-slide h2 em { font-style: normal; color: var(--terracotta); }
+
+  .ob-slide p.desc { color: var(--slate); font-size: 1.02rem; max-width: 38ch; margin: 0 auto 28px; }
+
+  .ob-field { text-align: left; margin-bottom: 16px; }
+  .ob-field label { display: block; font-size: 13px; color: var(--slate); margin-bottom: 8px; }
+
+  input[type="number"], input[type="time"] {
+    width: 100%;
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    padding: 11px 12px;
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+  }
+
+  input:focus, button:focus { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+
+  .ob-row { display: flex; gap: 12px; }
+  .ob-row .ob-field { flex: 1; }
+
+  .day-toggle { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .day-toggle button {
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    color: var(--slate);
+    border-radius: 8px;
+    width: 42px; height: 36px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .day-toggle button.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  button.primary {
+    background: var(--amber);
+    color: var(--ink);
+    border: none;
+    padding: 13px 26px;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button.primary:hover { filter: brightness(0.97); }
+
+  button.ghost {
+    background: var(--white);
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    padding: 13px 20px;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  button.ghost:hover { background: var(--ink); color: var(--white); }
+
+  .ob-actions { margin-top: 26px; }
+  .ob-foot { display: flex; justify-content: center; gap: 8px; padding: 26px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(27,31,42,0.18); }
+  .dot.active { background: var(--terracotta); width: 20px; border-radius: 4px; }
+
+  .locate-link {
+    background: none; border: none; color: var(--terracotta);
+    font-size: 13px; font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer; margin-top: 8px; padding: 0; text-decoration: underline;
+  }
+
+  /* ---------- Main app ---------- */
+  #app { display: none; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 0; }
+  .brand-row { display: flex; align-items: center; gap: 12px; }
+  .wordmark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; letter-spacing: 0.18em; color: var(--ink);
+    text-transform: uppercase; font-weight: 500;
+  }
+
+  .edit-setup {
+    background: none; border: none; color: var(--slate);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .edit-setup:hover { color: var(--terracotta); }
+
+  .hero { padding: 56px 0 36px; border-bottom: 1px solid var(--line); }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--terracotta); margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.06;
+    margin: 0 0 16px;
+    max-width: 15ch;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  h1 em { font-style: normal; color: var(--terracotta); }
+
+  .sub { color: var(--slate); font-size: 1.02rem; max-width: 46ch; margin: 0; }
+
+  section.panel { padding: 44px 0; border-bottom: 1px solid var(--line); }
+
+  .panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--slate); margin: 0 0 22px;
+  }
+
+  #status { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--slate); margin-top: 16px; min-height: 18px; }
+
+  .skyline-wrap { margin-top: 8px; overflow-x: auto; }
+
+  .skyline {
+    display: flex; align-items: flex-end; gap: 3px;
+    height: 180px; min-width: 720px; position: relative; padding-top: 30px;
+  }
+
+  .hour-col {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    height: 100%; justify-content: flex-end; position: relative;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 5px 5px 2px 2px;
+    background: linear-gradient(180deg, #d8d2c4, #c3bcac);
+    transition: height 0.4s ease;
+    position: relative;
+  }
+
+  .bar.work {
+    background: repeating-linear-gradient(
+      135deg, rgba(27,31,42,0.10), rgba(27,31,42,0.10) 4px,
+      rgba(27,31,42,0.02) 4px, rgba(27,31,42,0.02) 8px
+    ), #c3bcac;
+  }
+
+  .bar.asleep {
+    background: #ded7c8;
+    opacity: 0.55;
+  }
+
+  .bar.best {
+    background: linear-gradient(180deg, #d4f78a, var(--amber));
+    box-shadow: 0 0 16px rgba(146,232,42,0.5);
+  }
+
+  .hour-label { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: var(--slate); margin-top: 8px; }
+
+  .best-tag {
+    position: absolute; top: -26px; left: 50%; transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--terracotta); white-space: nowrap; font-weight: 600;
+  }
+
+  .legend { display: flex; gap: 22px; margin-top: 18px; font-size: 12.5px; color: var(--slate); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .result { margin-top: 40px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+  @media (max-width: 640px) { .result { grid-template-columns: 1fr; } }
+
+  .result-time {
+    font-family: 'Fraunces', serif; font-weight: 900;
+    font-size: clamp(2.6rem, 8vw, 4.2rem);
+    color: var(--terracotta); line-height: 1;
+  }
+
+  .result-meta { color: var(--slate); font-size: 15px; }
+  .result-meta strong { color: var(--ink); font-weight: 600; }
+
+  .score-tag {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--ink); background: rgba(146,232,42,0.22);
+    border: 1px solid rgba(146,232,42,0.6); padding: 3px 9px;
+    border-radius: 20px; margin-top: 8px;
+  }
+
+  footer { padding: 32px 0 48px; color: var(--slate); font-size: 12.5px; font-family: 'IBM Plex Mono', monospace; }
+
+  .offtime-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--white);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 24px;
+  }
+
+  .offtime-text { font-size: 13.5px; }
+  .offtime-text strong { display: block; font-size: 14.5px; margin-bottom: 2px; }
+  .offtime-text span { color: var(--slate); }
+
+  .toggle {
+    position: relative;
+    width: 46px; height: 26px;
+    background: var(--line);
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    background: var(--white);
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .toggle.on { background: var(--amber); }
+  .toggle.on::after { transform: translateX(20px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar, .ob-slide.active { animation: none; transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ONBOARDING ============ -->
+<div id="onboarding">
+  <div class="ob-body">
+
+    <div class="ob-slide active" data-slide="1">
+      <div class="badge" style="margin: 0 auto 26px;">r.</div>
+      <p class="ob-eyebrow">Welcome</p>
+      <h2>Stop guessing<br>when to <em>run</em>.</h2>
+      <p class="desc">Runcastr reads tomorrow's weather hour by hour and hands you the one window worth lacing up for — skipping anything during work.</p>
+      <div class="ob-actions">
+        <button class="primary" onclick="goToSlide(2)">Continue</button>
+      </div>
+    </div>
+
+    <div class="ob-slide" data-slide="2">
+      <p class="ob-eyebrow">Step 1 of 3</p>
+      <h2>Where do you <em>run</em>?</h2>
+      <p class="desc">We just need your location to pull real weather for your area — nothing to type.</p>
+      <div class="ob-actions">
+        <button class="primary" onclick="useMyLocation()">Share my location</button>
+      </div>
+      <div id="locate-status" style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--slate);"></div>
+      <div class="ob-actions" style="margin-top:22px;">
+        <button class="ghost" onclick="goToSlide(1)">Back</button>
+        <button class="primary" id="locationContinueBtn" onclick="goToSlide(3)" disabled style="opacity:0.4; cursor:not-allowed;">Continue</button>
+      </div>
+    </div>
+
+    <div class="ob-slide" data-slide="3">
+      <p class="ob-eyebrow">Step 2 of 3</p>
+      <h2>Link your <em>Bagr</em></h2>
+      <p class="desc">Enter the email you use for Bagr — we'll pull your working hours so Runcastr never suggests a run during work.</p>
+      <div class="ob-field">
+        <label for="bagr-email">Bagr email</label>
+        <input type="email" id="bagr-email" placeholder="you@example.com" />
+      </div>
+      <div class="ob-actions" style="margin-top:6px;">
+        <button class="ghost" onclick="fetchBagrHours()" style="margin-right:0;">Fetch working hours</button>
+      </div>
+      <button class="locate-link" onclick="skipBagr()">Don't have Bagr?</button>
+      <div id="bagr-status" style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--slate); text-align:left;"></div>
+
+      <div id="manual-fallback" style="display:none; margin-top:18px; text-align:left;">
+        <div class="ob-field">
+          <label>Working days</label>
+          <div class="day-toggle" id="dayToggle">
+            <button data-day="1" class="active">Mon</button>
+            <button data-day="2" class="active">Tue</button>
+            <button data-day="3" class="active">Wed</button>
+            <button data-day="4" class="active">Thu</button>
+            <button data-day="5" class="active">Fri</button>
+            <button data-day="6">Sat</button>
+            <button data-day="0">Sun</button>
+          </div>
+        </div>
+        <div class="ob-row" style="margin-top:16px;">
+          <div class="ob-field">
+            <label for="ob-start">Start</label>
+            <input type="time" id="ob-start" value="09:00" />
+          </div>
+          <div class="ob-field">
+            <label for="ob-end">End</label>
+            <input type="time" id="ob-end" value="17:00" />
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-actions">
+        <button class="ghost" onclick="goToSlide(2)">Back</button>
+        <button class="primary" onclick="goToSlide(4)">Continue</button>
+      </div>
+    </div>
+
+    <div class="ob-slide" data-slide="4">
+      <p class="ob-eyebrow">Step 3 of 3</p>
+      <h2>When do you <em>sleep</em>?</h2>
+      <p class="desc">So we never suggest a run before you're awake or once you're winding down for bed.</p>
+      <div class="ob-row">
+        <div class="ob-field">
+          <label for="ob-wake">Usual wake-up time</label>
+          <input type="time" id="ob-wake" value="06:30" />
+        </div>
+        <div class="ob-field">
+          <label for="ob-bed">Usual bedtime</label>
+          <input type="time" id="ob-bed" value="22:30" />
+        </div>
+      </div>
+      <div class="ob-actions">
+        <button class="ghost" onclick="goToSlide(3)">Back</button>
+        <button class="primary" onclick="finishOnboarding()">Find my run window</button>
+      </div>
+    </div>
+
+  </div>
+  <div class="ob-foot">
+    <div class="dot active" data-dot="1"></div>
+    <div class="dot" data-dot="2"></div>
+    <div class="dot" data-dot="3"></div>
+    <div class="dot" data-dot="4"></div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app">
+  <div class="wrap">
+    <header class="top">
+      <div class="brand-row">
+        <div class="badge">r.</div>
+        <div class="wordmark">runcastr</div>
+      </div>
+      <button class="edit-setup" onclick="reopenOnboarding()">Edit setup</button>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">Best-time-to-run forecasting</p>
+      <h1>Your window, <em>found</em>.</h1>
+      <p class="sub">Here's tomorrow, hour by hour — and the one stretch worth getting up for.</p>
+    </section>
+
+    <section class="panel">
+      <p class="panel-title">Tomorrow, hour by hour</p>
+      <div class="skyline-wrap">
+        <div class="skyline" id="skyline"></div>
+      </div>
+      <div class="legend">
+        <span><span class="swatch" style="background:#c3bcac;"></span> Open hour</span>
+        <span><span class="swatch" style="background:repeating-linear-gradient(135deg,#a8a196,#a8a196 3px,#c3bcac 3px,#c3bcac 6px);"></span> Working hours</span>
+        <span><span class="swatch" style="background:#ded7c8; opacity:0.7;"></span> Asleep</span>
+        <span><span class="swatch" style="background:var(--amber);"></span> Best window</span>
+      </div>
+
+      <div class="offtime-row">
+        <div class="offtime-text">
+          <strong>Off Time</strong>
+          <span>Summer holidays, school break, time off — ignore working hours for now.</span>
+        </div>
+        <button class="toggle" id="offtimeToggle" onclick="toggleOffTime()" aria-pressed="false"></button>
+      </div>
+
+      <div class="result" id="result" style="display:none;">
+        <div>
+          <div class="result-time" id="resultTime">–</div>
+          <div class="score-tag" id="resultScore">score –</div>
+        </div>
+        <div class="result-meta" id="resultMeta"></div>
+      </div>
+
+      <div id="status"></div>
+    </section>
+
+    <footer>Weather via Open-Meteo · Built with Runcastr</footer>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'runcastr-setup';
+  const OFFTIME_KEY = 'runcastr-offtime';
+  const BAGR_FUNCTION_URL = 'https://dqorsxfqokzuwmuwipov.supabase.co/functions/v1/get-working-hours';
+  const BAGR_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3JzeGZxb2t6dXdtdXdpcG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MDYwMjQsImV4cCI6MjEwMDQ4MjAyNH0.pifrvXu58tVDiVTDWWtqlEGt4L3_FoEnUlUUXBho5NE';
+
+  let capturedLocation = null;
+  let capturedWorkingHours = null; // [{ day_of_week, start_time, end_time }]
+  let currentSetup = null;
+  let offTime = localStorage.getItem(OFFTIME_KEY) === 'true';
+
+  function toggleOffTime() {
+    offTime = !offTime;
+    localStorage.setItem(OFFTIME_KEY, offTime ? 'true' : 'false');
+    document.getElementById('offtimeToggle').classList.toggle('on', offTime);
+    document.getElementById('offtimeToggle').setAttribute('aria-pressed', offTime ? 'true' : 'false');
+    if (currentSetup) findBestWindow(currentSetup);
+  }
+
+  function goToSlide(n) {
+    document.querySelectorAll('.ob-slide').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.ob-slide[data-slide="${n}"]`).classList.add('active');
+    document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+    document.querySelector(`.dot[data-dot="${n}"]`).classList.add('active');
+  }
+
+  function useMyLocation() {
+    const status = document.getElementById('locate-status');
+    const continueBtn = document.getElementById('locationContinueBtn');
+
+    if (!navigator.geolocation) {
+      status.textContent = "Your browser doesn't support location sharing.";
+      return;
+    }
+
+    status.textContent = 'Locating…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        capturedLocation = {
+          lat: pos.coords.latitude.toFixed(4),
+          lon: pos.coords.longitude.toFixed(4),
+        };
+        status.textContent = 'Location set.';
+        continueBtn.disabled = false;
+        continueBtn.style.opacity = '1';
+        continueBtn.style.cursor = 'pointer';
+      },
+      () => {
+        status.textContent = "Couldn't get your location — check your browser's location permission and try again.";
+      }
+    );
+  }
+
+  function skipBagr() {
+    document.getElementById('manual-fallback').style.display = 'block';
+    document.getElementById('bagr-status').textContent = 'No problem — set your working hours below.';
+    capturedWorkingHours = null;
+  }
+
+  async function fetchBagrHours() {
+    const email = document.getElementById('bagr-email').value.trim();
+    const status = document.getElementById('bagr-status');
+    const fallback = document.getElementById('manual-fallback');
+
+    if (!email) {
+      status.textContent = 'Enter the email you use for Bagr first.';
+      return;
+    }
+
+    status.textContent = 'Checking Bagr…';
+
+    try {
+      const res = await fetch(BAGR_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': BAGR_ANON_KEY,
+          'Authorization': `Bearer ${BAGR_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!data.found || !data.workingHours || data.workingHours.length === 0) {
+        status.textContent = "No working hours found for that email in Bagr — set them manually below.";
+        fallback.style.display = 'block';
+        capturedWorkingHours = null;
+        return;
+      }
+
+      capturedWorkingHours = data.workingHours;
+      fallback.style.display = 'none';
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const summary = data.workingHours
+        .map(h => `${dayNames[h.day_of_week]} ${h.start_time.slice(0,5)}–${h.end_time.slice(0,5)}`)
+        .join(', ');
+      status.textContent = `Linked — ${summary}`;
+    } catch (err) {
+      status.textContent = 'Could not reach Bagr — set your working hours manually below.';
+      fallback.style.display = 'block';
+      capturedWorkingHours = null;
+    }
+  }
+
+  function getManualWorkingHours() {
+    const dayToggle = document.getElementById('dayToggle');
+    const startTime = document.getElementById('ob-start').value;
+    const endTime = document.getElementById('ob-end').value;
+    const days = [...dayToggle.querySelectorAll('button.active')].map(b => parseInt(b.dataset.day, 10));
+    return days.map(day_of_week => ({ day_of_week, start_time: startTime, end_time: endTime }));
+  }
+
+  function finishOnboarding() {
+    const workingHours = capturedWorkingHours ?? getManualWorkingHours();
+    const wakeTime = document.getElementById('ob-wake').value;
+    const bedTime = document.getElementById('ob-bed').value;
+
+    if (!capturedLocation) {
+      goToSlide(2);
+      return;
+    }
+
+    const setup = {
+      lat: capturedLocation.lat,
+      lon: capturedLocation.lon,
+      workingHours,
+      wakeTime,
+      bedTime,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
+    document.getElementById('onboarding').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    findBestWindow(setup);
+  }
+
+  function reopenOnboarding() {
+    document.getElementById('onboarding').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    goToSlide(2);
+  }
+
+  function scoreHour({ temperature, precipitation_probability, wind_speed }) {
+    let score = 100;
+    score -= Math.abs(temperature - 15) * 2;
+    score -= precipitation_probability * 0.8;
+    score -= wind_speed * 1.5;
+    return Math.max(0, Math.round(score));
+  }
+
+  function isDuringWork(hourDate, workingHours) {
+    const dayOfWeek = hourDate.getDay();
+    const hourString = hourDate.toTimeString().slice(0, 5);
+    return workingHours.some(slot =>
+      slot.day_of_week === dayOfWeek &&
+      hourString >= slot.start_time.slice(0,5) &&
+      hourString < slot.end_time.slice(0,5)
+    );
+  }
+
+  function isAsleep(hourDate, wakeTime, bedTime) {
+    const hourString = hourDate.toTimeString().slice(0, 5);
+    // Awake window is wakeTime..bedTime on the same day.
+    // Anything before wake or at/after bed counts as asleep.
+    return hourString < wakeTime || hourString >= bedTime;
+  }
+
+  async function findBestWindow(setup) {
+    currentSetup = setup;
+    const status = document.getElementById('status');
+    status.textContent = "Fetching tomorrow's forecast…";
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const forecastDate = tomorrow.toISOString().slice(0, 10);
+
+    const url = new URL('https://api.open-meteo.com/v1/forecast');
+    url.searchParams.set('latitude', setup.lat);
+    url.searchParams.set('longitude', setup.lon);
+    url.searchParams.set('hourly', 'temperature_2m,precipitation_probability,wind_speed_10m');
+    url.searchParams.set('start_date', forecastDate);
+    url.searchParams.set('end_date', forecastDate);
+    url.searchParams.set('timezone', 'auto');
+
+    let data;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Weather request failed');
+      data = await res.json();
+    } catch (err) {
+      status.textContent = 'Could not fetch weather — check your connection and try again.';
+      return;
+    }
+
+    const hourly = data.hourly.time.map((time, i) => ({
+      time,
+      temperature: data.hourly.temperature_2m[i],
+      precipitation_probability: data.hourly.precipitation_probability[i],
+      wind_speed: data.hourly.wind_speed_10m[i],
+    }));
+
+    let best = null;
+    const scored = hourly.map(hour => {
+      const hourDate = new Date(hour.time);
+      const working = offTime ? false : isDuringWork(hourDate, setup.workingHours);
+      const asleep = isAsleep(hourDate, setup.wakeTime, setup.bedTime);
+      const unavailable = working || asleep;
+      const score = scoreHour(hour);
+      const entry = { ...hour, hourDate, working, asleep, unavailable, score };
+      if (!unavailable && (!best || score > best.score)) best = entry;
+      return entry;
+    });
+
+    renderSkyline(scored, best);
+    renderResult(best, forecastDate);
+    status.textContent = offTime
+      ? 'Off Time is on — working hours are being ignored.'
+      : 'Done — best window highlighted below.';
+  }
+
+  function renderSkyline(scored, best) {
+    const el = document.getElementById('skyline');
+    el.innerHTML = '';
+    scored.forEach(entry => {
+      const col = document.createElement('div');
+      col.className = 'hour-col';
+
+      const bar = document.createElement('div');
+      const heightPct = Math.max(6, (entry.score / 100) * 100);
+      bar.style.height = heightPct + '%';
+      let barClass = 'bar';
+      if (entry.asleep) barClass += ' asleep';
+      else if (entry.working) barClass += ' work';
+      if (best && entry.time === best.time) barClass += ' best';
+      bar.className = barClass;
+
+      if (best && entry.time === best.time) {
+        const tag = document.createElement('div');
+        tag.className = 'best-tag';
+        tag.textContent = 'best';
+        bar.appendChild(tag);
+      }
+
+      const label = document.createElement('div');
+      label.className = 'hour-label';
+      label.textContent = entry.hourDate.toTimeString().slice(0, 5);
+
+      col.appendChild(bar);
+      col.appendChild(label);
+      el.appendChild(col);
+    });
+  }
+
+  function renderResult(best, forecastDate) {
+    const resultEl = document.getElementById('result');
+    if (!best) {
+      resultEl.style.display = 'none';
+      return;
+    }
+    resultEl.style.display = 'grid';
+    document.getElementById('resultTime').textContent = best.hourDate.toTimeString().slice(0, 5);
+    document.getElementById('resultScore').textContent = `score ${best.score}/100`;
+
+    const rainNote = best.precipitation_probability > 30
+      ? `${best.precipitation_probability}% chance of rain`
+      : 'low chance of rain';
+    const windNote = best.wind_speed > 20 ? `${best.wind_speed} km/h wind` : 'light wind';
+
+    document.getElementById('resultMeta').innerHTML =
+      `Best window on <strong>${forecastDate}</strong> — <strong>${best.temperature}°C</strong>, ${rainNote}, ${windNote}.`;
+  }
+
+  document.getElementById('dayToggle').querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('active'));
+  });
+
+  // On load: skip onboarding if we already have a saved setup
+  (function init() {
+    document.getElementById('offtimeToggle').classList.toggle('on', offTime);
+    document.getElementById('offtimeToggle').setAttribute('aria-pressed', offTime ? 'true' : 'false');
+
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const setup = JSON.parse(saved);
+      if (!setup.wakeTime) setup.wakeTime = '06:30';
+      if (!setup.bedTime) setup.bedTime = '22:30';
+      document.getElementById('onboarding').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      findBestWindow(setup);
+    }
+  })();
+</script>
+
+</body>
+</html>
