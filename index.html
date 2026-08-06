@@ -234,6 +234,13 @@
     box-shadow: 0 0 16px rgba(146,232,42,0.5);
   }
 
+  .bar.selected {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .hour-col { cursor: pointer; }
+
   .hour-label { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: var(--slate); margin-top: 8px; }
 
   .best-tag {
@@ -441,10 +448,14 @@
 
       <div class="result" id="result" style="display:none;">
         <div>
+          <div class="panel-title" id="resultLabel" style="margin-bottom:6px;">Best window</div>
           <div class="result-time" id="resultTime">–</div>
           <div class="score-tag" id="resultScore">score –</div>
         </div>
-        <div class="result-meta" id="resultMeta"></div>
+        <div>
+          <div class="result-meta" id="resultMeta"></div>
+          <button class="locate-link" id="backToBestBtn" onclick="showBest()" style="display:none;">← Back to best window</button>
+        </div>
       </div>
 
       <div id="status"></div>
@@ -461,6 +472,8 @@
   let capturedLocation = null;
   let currentSetup = null;
   let offTime = localStorage.getItem(OFFTIME_KEY) === 'true';
+  let lastScored = [];
+  let lastBest = null;
 
   function toggleOffTime() {
     offTime = !offTime;
@@ -613,10 +626,12 @@
     });
 
     renderSkyline(scored, best);
-    renderResult(best, forecastDate);
+    renderResult(best, forecastDate, true);
+    lastScored = scored;
+    lastBest = best;
     status.textContent = offTime
       ? 'Off Time is on — working hours are being ignored.'
-      : 'Done — best window highlighted below.';
+      : 'Done — best window highlighted below. Tap any bar to inspect it.';
   }
 
   function renderSkyline(scored, best) {
@@ -648,27 +663,58 @@
 
       col.appendChild(bar);
       col.appendChild(label);
+      col.addEventListener('click', () => selectHour(entry));
       el.appendChild(col);
     });
   }
 
-  function renderResult(best, forecastDate) {
+  function selectHour(entry) {
+    document.querySelectorAll('.bar.selected').forEach(b => b.classList.remove('selected'));
+    const isBest = lastBest && entry.time === lastBest.time;
+    if (!isBest) {
+      const bars = document.querySelectorAll('.hour-col');
+      const index = lastScored.findIndex(e => e.time === entry.time);
+      if (bars[index]) bars[index].querySelector('.bar').classList.add('selected');
+    }
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const forecastDate = tomorrow.toISOString().slice(0, 10);
+    renderResult(entry, forecastDate, isBest);
+  }
+
+  function showBest() {
+    if (!lastBest) return;
+    selectHour(lastBest);
+  }
+
+  function renderResult(entry, forecastDate, isBest) {
     const resultEl = document.getElementById('result');
-    if (!best) {
+    const backBtn = document.getElementById('backToBestBtn');
+    const label = document.getElementById('resultLabel');
+
+    if (!entry) {
       resultEl.style.display = 'none';
       return;
     }
-    resultEl.style.display = 'grid';
-    document.getElementById('resultTime').textContent = best.hourDate.toTimeString().slice(0, 5);
-    document.getElementById('resultScore').textContent = `score ${best.score}/100`;
 
-    const rainNote = best.precipitation_probability > 30
-      ? `${best.precipitation_probability}% chance of rain`
+    resultEl.style.display = 'grid';
+    label.textContent = isBest ? 'Best window' : 'Selected hour';
+    backBtn.style.display = isBest ? 'none' : 'inline-block';
+
+    document.getElementById('resultTime').textContent = entry.hourDate.toTimeString().slice(0, 5);
+    document.getElementById('resultScore').textContent = `score ${entry.score}/100`;
+
+    const rainNote = entry.precipitation_probability > 30
+      ? `${entry.precipitation_probability}% chance of rain`
       : 'low chance of rain';
-    const windNote = best.wind_speed > 20 ? `${best.wind_speed} km/h wind` : 'light wind';
+    const windNote = entry.wind_speed > 20 ? `${entry.wind_speed} km/h wind` : 'light wind';
+
+    let availabilityNote = '';
+    if (entry.asleep) availabilityNote = ' — you\'d normally be asleep then.';
+    else if (entry.working) availabilityNote = ' — that\'s during work.';
 
     document.getElementById('resultMeta').innerHTML =
-      `Best window on <strong>${forecastDate}</strong> — <strong>${best.temperature}°C</strong>, ${rainNote}, ${windNote}.`;
+      `${isBest ? 'Best window' : 'This hour'} on <strong>${forecastDate}</strong> — <strong>${entry.temperature}°C</strong>, ${rainNote}, ${windNote}${availabilityNote}`;
   }
 
   document.getElementById('dayToggle').querySelectorAll('button').forEach(btn => {
