@@ -195,17 +195,33 @@
     color: var(--slate); margin: 0 0 22px;
   }
 
-  .calendar-btn {
+  .date-picker-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .date-picker-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink);
+    pointer-events: none;
+  }
+
+  .date-input-visible {
     background: var(--white);
     border: 1.5px solid var(--line);
     border-radius: 8px;
-    width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
+    padding: 9px 12px 9px 34px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
     color: var(--ink);
     cursor: pointer;
-    flex-shrink: 0;
+    height: 36px;
   }
-  .calendar-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .date-input-visible:hover { border-color: var(--terracotta); }
 
   #status { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--slate); margin-top: 16px; min-height: 18px; }
 
@@ -439,17 +455,17 @@
     </section>
 
     <section class="panel">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; position:relative;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap: 12px; flex-wrap: wrap;">
         <p class="panel-title" id="dayPanelTitle" style="margin:0;">Today, hour by hour</p>
-        <label class="calendar-btn" for="dateInput" aria-label="Pick a day" onclick="handleCalendarClick(event)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="date-picker-wrap">
+          <svg class="date-picker-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="3"/>
             <line x1="16" y1="2" x2="16" y2="6"/>
             <line x1="8" y1="2" x2="8" y2="6"/>
             <line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
-        </label>
-        <input type="date" id="dateInput" style="position:absolute; width:1px; height:1px; opacity:0;" onchange="onDateChange()" />
+          <input type="date" id="dateInput" class="date-input-visible" onchange="onDateChange()" />
+        </div>
       </div>
       <div class="skyline-wrap">
         <div class="skyline" id="skyline"></div>
@@ -498,20 +514,6 @@
   let lastScored = [];
   let lastBest = null;
   let selectedDate = null; // YYYY-MM-DD, defaults to today on init
-
-  function handleCalendarClick(e) {
-    const input = document.getElementById('dateInput');
-    if (input.showPicker) {
-      e.preventDefault(); // we'll open it ourselves so the dropdown actually appears
-      try {
-        input.showPicker();
-      } catch (err) {
-        input.focus();
-      }
-    }
-    // If showPicker isn't supported (older Safari), let the label's
-    // default behavior focus the input, which opens its native picker.
-  }
 
   function onDateChange() {
     const val = document.getElementById('dateInput').value;
